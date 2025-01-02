@@ -19,7 +19,7 @@ def optimize_prompt(input_prompt, meta_prompt, api_key):
     try:
         openai.api_key = api_key
         response = openai.chat.completions.create(
-            model="gpt-4",  # Or your model of choice
+            model="gpt-4o",  # Or your model of choice
             messages=[
                 {"role": "system", "content": meta_prompt},
                 {"role": "user", "content": input_prompt},
