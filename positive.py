@@ -32,7 +32,7 @@ def optimize_prompt(input_prompt, meta_prompt, api_key):
         return f"An error occurred: {e}"
 
 st.title("Negative Prompt Optimizer")
-st.text("Created by David Pearl")
+st.text("Created by David Pearl with inspiration from a few friends in AI (thanks Rick and Matt)")
 st.text("Enter your prompt below to see it transformed for easier machine readability (e.g. removal of negatives) and improved clarity.")
 
 meta_prompt = """role: "system"
