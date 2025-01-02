@@ -1,14 +1,39 @@
-import { useState } from 'react';
-import axios from 'axios';
-import Head from 'next/head';
+import streamlit as st
+import openai
+from dotenv import load_dotenv
 
-export default function Home() {
-  const [inputPrompt, setInputPrompt] = useState('');
-  const [optimizedResult, setOptimizedResult] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [apiKey, setApiKey] = useState(''); // New state for API key
-  const metaPrompt = `role: "system"
+load_dotenv()
+
+def optimize_prompt(input_prompt, meta_prompt, api_key):
+    """
+    Optimizes a prompt containing negative instructions using a meta-prompt.
+
+    Args:
+        input_prompt (str): The prompt to be optimized.
+        meta_prompt (str): The meta-prompt guiding the optimization.
+        api_key (str): The user's OpenAI API key.
+
+    Returns:
+        str: The LLM's response containing the transformation rationale and optimized prompt, or an error message.
+    """
+    try:
+        openai.api_key = api_key
+        response = openai.chat.completions.create(
+            model="gpt-4",  # Or your model of choice
+            messages=[
+                {"role": "system", "content": meta_prompt},
+                {"role": "user", "content": input_prompt},
+            ],
+        )
+        return response.choices[0].message.content
+    except openai.error.AuthenticationError:
+        return "Error: Invalid OpenAI API key."
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+st.title("Negative Instruction Optimizer")
+
+meta_prompt = """role: "system"
     context:
     background: "You are an advanced AI prompt engineer specializing in optimizing prompts for interactions with large language models. Your primary function is to act as a 'Negative Instruction Optimizer.' You are equipped with a deep understanding of how language models process instructions, the potential pitfalls of negative constraints, and the principles of effective prompt engineering. You are a master of transforming restrictions into opportunities, prohibitions into positive guidance, and negative constraints into clear pathways for success. Your expertise lies in identifying the core intent behind negative instructions and reformulating them into positive instructions that are clearer, more efficient, and more robust."
     constraints:
@@ -73,68 +98,16 @@ export default function Home() {
     - "The positive instructions are clear, concise, and token-efficient."
     - "The [Transformation Rationale] section provides a clear and logical explanation for each transformation."
     - "The [Optimized Prompt] is ready for use with a language model and is likely to produce better results than the original, negatively framed prompt."
-    `;
+    """
+api_key = st.text_input("Enter Your OpenAI API Key:", type="password")
+input_prompt = st.text_area("Enter Your Prompt Here:")
 
-
-  const handleOptimize = async () => {
-    setLoading(true);
-    setError('');
-    setOptimizedResult('');
-
-    if (!apiKey) {
-      setError('Please enter your OpenAI API key.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await axios.post('/api/optimize', {
-        inputPrompt,
-        metaPrompt,
-        apiKey,  // Pass the API key to the backend
-      });
-      setOptimizedResult(response.data.optimizedPrompt);
-    } catch (err) {
-      console.error(err);
-      setError('An error occurred while optimizing the prompt.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div>
-      <Head>
-        <title>Negative Instruction Optimizer</title>
-      </Head>
-      <main>
-        <h1>Negative Instruction Optimizer</h1>
-        <input
-          type="password" // Use "password" type for security
-          placeholder="Enter your OpenAI API Key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          style={{ marginBottom: '10px', display: "block"}}
-        />
-        <textarea
-          placeholder="Enter your prompt here..."
-          value={inputPrompt}
-          onChange={(e) => setInputPrompt(e.target.value)}
-          rows={5}
-          cols={50}
-        />
-        <button onClick={handleOptimize} disabled={loading}>
-          {loading ? 'Optimizing...' : 'Optimize Prompt'}
-        </button>
-
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {optimizedResult && (
-          <div>
-            <h2>Optimized Result:</h2>
-            <pre>{optimizedResult}</pre>
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
+if st.button("Optimize Prompt"):
+    if not api_key:
+        st.error("Please enter your OpenAI API key.")
+    elif input_prompt:
+        with st.spinner("Optimizing your prompt..."):
+            optimized_result = optimize_prompt(input_prompt, meta_prompt, api_key)
+        st.write(optimized_result)
+    else:
+        st.error("Please enter a prompt.")
